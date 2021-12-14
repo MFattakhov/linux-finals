@@ -1,0 +1,48 @@
+#!/bin/bash
+
+opt_f=
+groupname=
+file=
+
+for arg in "$@"
+do
+	if [[ "${arg:0:1}" == "-" ]]
+	then
+		case $arg in 
+		-f) opt_f=1 ;;
+		 *) echo "$0: Invalid option '$arg', usage is '$0' [-f file] groupname" >&2
+		    exit 2 ;;
+		esac
+	elif [[ "$opt_f" && -z "$file" ]]
+	then
+		file="$arg"
+		if [[ ! -r "$file" ]]
+		then
+			echo "$0: Cannot read '$file'" >&2
+			exit 2
+		fi
+	elif [[ -z "$groupname" ]]
+	then
+		groupname="$arg"
+	else
+		echo "$0: Too much options, usage is '$0' [-f file] groupname" >&2
+		exit 2
+	fi
+done
+
+if [[ -z "$opt_f" ]]
+then
+	file="/etc/group"
+fi
+
+val=$(grep -- "^$groupname:" "$file")
+
+if [[ -z "$val" ]]
+then
+	echo "$0: Group named '$groupname' isn't found" >&2
+	exit 1
+else
+	val="${val##*:}"
+	echo "$val" | tr "," "\n"
+	exit 0
+fi
